@@ -1,24 +1,34 @@
-import logo from './logo.svg';
+import React, { useContext } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { AuthContext } from './auth/AuthContext';
+import Login from './pages/Login';
+import AdminDashboard from './pages/AdminDashboard';
+import UserProfile from './pages/UserProfile'
 import './App.css';
 
 function App() {
+  const { token, role } = useContext(AuthContext);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Routes>
+    {token === null ? (
+      <>
+        <Route path="/" element={<Login />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </>
+    ) : role === "admin" ? (
+      <>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="*" element={<Navigate to="/admin/dashboard" />} />
+      </>
+    ) : role === "user" ? (
+      <>
+        <Route path="/user/profile" element={<UserProfile />} />
+        <Route path="*" element={<Navigate to="/user/profile" />} />
+      </>
+    )  : (
+      <Navigate to="/" />
+    )}
+  </Routes>  
   );
 }
 
