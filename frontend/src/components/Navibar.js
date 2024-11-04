@@ -11,7 +11,6 @@ function Navibar() {
   const isLoggedIn = !!token;
 
   const handleLogout = () => {
-    //AuthContext remove token
     logout();
     navigate('/');
   };
