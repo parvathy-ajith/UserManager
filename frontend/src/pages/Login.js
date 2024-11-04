@@ -28,7 +28,7 @@ function Login() {
             // });
             //token, username, role set in AuthContext  
             //login(response.data.token, response.data.username)
-            login('token','username','admin');
+            login('token','username','user');
             if(role==='admin'){
                 navigate('/admin/dashboard');
             }
