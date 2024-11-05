@@ -11,6 +11,7 @@ function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [editingItem, setEditingItem] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
   const [show, setShow] = useState(false);
   const { token } = useContext(AuthContext);
 
@@ -24,7 +25,7 @@ function AdminDashboard() {
     location: yup.string().required("Enter Location"),
   });
 
-  const { register, handleSubmit,reset, formState: { errors } } = useForm({ resolver: yupResolver(addUserSchema) });
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({ resolver: yupResolver(addUserSchema) });
 
   const usersList = async () => {
     try {
@@ -58,22 +59,26 @@ function AdminDashboard() {
     try {
       const response = await axios.patch(`${process.env.REACT_APP_API_BASEURL}/user/edit`, {
         ...editingItem
-    }, {
+      }, {
         headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-    });
-    console.log(response);
-    setEditingItem({});
-    usersList();
+      });
+      console.log(response);
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user._id === editingItem._id ? { ...user, ...editingItem } : user
+        )
+      );
+      setEditingItem({});
     }
     catch (error) {
       console.log(error);
       if (error.response)
         setErrorMessage(error.response.data.message)
     }
-    
+
   };
 
 
@@ -81,28 +86,33 @@ function AdminDashboard() {
     setEditingItem({});
   };
 
-  const handleDelete =async  (id) => {
+  const handleShowDeleteModal = (user) => {
+    setSelectedUser(user);
+    handleShow();
+  };
+
+  const handleDelete = async (id) => {
     try {
       const response = await axios.delete(`${process.env.REACT_APP_API_BASEURL}/user/${id}`, {
-          headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-          }
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
       });
-      
-      // Refresh the user list after deletion
-      usersList();
+
+      // Update user after deletion
+      setUsers((prevUsers) => prevUsers.filter(user => user._id !== id));
       handleClose(); // Close the modal after deletion
       console.log(response.data.message); // Optional: log success message
-  } catch (error) {
+    } catch (error) {
       console.log(error);
       if (error.response) {
-          setErrorMessage(error.response.data.message);
+        setErrorMessage(error.response.data.message);
       } else {
-          setErrorMessage("An error occurred while deleting the user.");
+        setErrorMessage("An error occurred while deleting the user.");
       }
-  }
-};
+    }
+  };
 
   const addUser = async (data) => {
     try {
@@ -221,16 +231,16 @@ function AdminDashboard() {
                     ) : (
                       <>
                         <button className='btn btn-outline-warning me-3' onClick={() => handleEditItem(user)}>Edit</button>
-                        <button className='btn btn-outline-danger me-3' onClick={handleShow} > Delete</button>
+                        <button className='btn btn-outline-danger me-3' onClick={() => handleShowDeleteModal(user)}> Delete</button>
 
                         <Modal show={show} onHide={handleClose}>
                           <Modal.Header closeButton>
                             <Modal.Title>Delete Confirmation</Modal.Title>
                           </Modal.Header>
-                          <Modal.Body>Are you sure you want to delete the user? </Modal.Body>
+                          <Modal.Body>Are you sure you want to delete the user {selectedUser?.name}? </Modal.Body>
                           <Modal.Footer>
                             <Button variant="secondary" onClick={handleClose}>Cancel Delete</Button>
-                            <Button variant="danger" onClick={() => handleDelete(user._id)}>Delete</Button>
+                            <Button variant="danger" onClick={() => handleDelete(selectedUser?._id)}>Delete</Button>
                           </Modal.Footer>
                         </Modal>
                       </>
