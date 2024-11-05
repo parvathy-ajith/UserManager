@@ -5,7 +5,7 @@ import { AuthContext } from '../auth/AuthContext';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-//import axios from 'axios';
+import axios from 'axios';
 
 function AdminDashboard() {
   const [users, setUsers] = useState([]);
@@ -24,24 +24,17 @@ function AdminDashboard() {
     location: yup.string().required("Enter Location"),
   });
 
-  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: yupResolver(addUserSchema) });
+  const { register, handleSubmit,reset, formState: { errors } } = useForm({ resolver: yupResolver(addUserSchema) });
 
   const usersList = async () => {
     try {
-      // const response = await axios.get(`${process.env.REACT_APP_API_BASEURL}/users`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'application/json',
-      //   }
-      // });
-      // console.log(response.data);
-      // setUsers(response.data.users);
-
-      setUsers([
-        { id: 1, name: "Rahul", email: "rahul@gmail.com", phone: "9495949422", location: "Trivandrum" },
-        { id: 2, name: "Paru", email: "paru@gmail.com", phone: "9495949422", location: "Kollam" }
-      ]);
-      console.log(users);
+      const response = await axios.get(`${process.env.REACT_APP_API_BASEURL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      setUsers(response.data.users);
 
     } catch (err) {
       console.log(err);
@@ -59,13 +52,28 @@ function AdminDashboard() {
     setEditingItem(user);
   };
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     console.log('handleSaveItem');
     //save to db via patch
-
-    console.log(editingItem);
+    try {
+      const response = await axios.patch(`${process.env.REACT_APP_API_BASEURL}/user/edit`, {
+        ...editingItem
+    }, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    console.log(response);
     setEditingItem({});
     usersList();
+    }
+    catch (error) {
+      console.log(error);
+      if (error.response)
+        setErrorMessage(error.response.data.message)
+    }
+    
   };
 
 
@@ -73,20 +81,47 @@ function AdminDashboard() {
     setEditingItem({});
   };
 
-  const handleDelete = (id) => {
-    handleClose();
-  };
+  const handleDelete =async  (id) => {
+    try {
+      const response = await axios.delete(`${process.env.REACT_APP_API_BASEURL}/user/${id}`, {
+          headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+          }
+      });
+      
+      // Refresh the user list after deletion
+      usersList();
+      handleClose(); // Close the modal after deletion
+      console.log(response.data.message); // Optional: log success message
+  } catch (error) {
+      console.log(error);
+      if (error.response) {
+          setErrorMessage(error.response.data.message);
+      } else {
+          setErrorMessage("An error occurred while deleting the user.");
+      }
+  }
+};
 
   const addUser = async (data) => {
     try {
-      // const response = await axios.post(`${process.env.REACT_APP_API_BASEURL}/login`, {
-      //     email: data.email,
-      //     password: data.password
-      // });
-      //token, username, role set in AuthContext  
-      //login(response.data.token, response.data.username)
-
-      setUsers()
+      const response = await axios.post(`${process.env.REACT_APP_API_BASEURL}/user/add`,
+        {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          location: data.location,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+      reset();
+      usersList();
 
     }
     catch (error) {
@@ -120,7 +155,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-            <tr>
+              <tr key="addUser">
                 <td colSpan="6">
                   <form className="d-flex mt-4 justify-content-center gap-3" onSubmit={handleSubmit(addUser)}>
                     <div>
@@ -146,61 +181,62 @@ function AdminDashboard() {
                 </td>
               </tr>
               {users.map((user, index) =>
-              (<tr key={user.id}>
-                <td>{index + 1}</td>
-                <td>
-                  {editingItem.id === user.id ? (
-                    <input type="text" value={editingItem.name} onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} />
-                  ) : (
-                    user.name
-                  )}
-                </td>
-                <td>
-                  {editingItem.id === user.id ? (
-                    <input type="text" value={editingItem.email} onChange={(e) => setEditingItem({ ...editingItem, email: e.target.value })} />
-                  ) : (
-                    user.email
-                  )}
-                </td>
-                <td>
-                  {editingItem.id === user.id ? (
-                    <input type="text" value={editingItem.phone} onChange={(e) => setEditingItem({ ...editingItem, phone: e.target.value })} />
-                  ) : (
-                    user.phone
-                  )}
-                </td>
-                <td>
-                  {editingItem.id === user.id ? (
-                    <input type="text" value={editingItem.location} onChange={(e) => setEditingItem({ ...editingItem, location: e.target.value })} />
-                  ) : (
-                    user.location
-                  )}
-                </td>
-                <td>
-                  {editingItem.id === user.id ? (
-                    <>
-                      <button className="btn btn-outline-success me-3" onClick={handleSaveItem}> Save </button>
-                      <button className="btn btn-outline-secondary me-3" onClick={handleCancelEdit}> Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button className='btn btn-outline-warning me-3' onClick={() => handleEditItem(user)}>Edit</button>
-                      <button className='btn btn-outline-danger me-3' onClick={handleShow} > Delete</button>
+              (
+                <tr key={user._id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    {editingItem._id === user._id ? (
+                      <input type="text" value={editingItem.name} onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} />
+                    ) : (
+                      user.name
+                    )}
+                  </td>
+                  <td>
+                    {editingItem._id === user._id ? (
+                      <input type="text" value={editingItem.email} onChange={(e) => setEditingItem({ ...editingItem, email: e.target.value })} />
+                    ) : (
+                      user.email
+                    )}
+                  </td>
+                  <td>
+                    {editingItem._id === user._id ? (
+                      <input type="text" value={editingItem.phone} onChange={(e) => setEditingItem({ ...editingItem, phone: e.target.value })} />
+                    ) : (
+                      user.phone
+                    )}
+                  </td>
+                  <td>
+                    {editingItem._id === user._id ? (
+                      <input type="text" value={editingItem.location} onChange={(e) => setEditingItem({ ...editingItem, location: e.target.value })} />
+                    ) : (
+                      user.location
+                    )}
+                  </td>
+                  <td>
+                    {editingItem._id === user._id ? (
+                      <>
+                        <button className="btn btn-outline-success me-3" onClick={handleSaveItem}> Save </button>
+                        <button className="btn btn-outline-secondary me-3" onClick={handleCancelEdit}> Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <button className='btn btn-outline-warning me-3' onClick={() => handleEditItem(user)}>Edit</button>
+                        <button className='btn btn-outline-danger me-3' onClick={handleShow} > Delete</button>
 
-                      <Modal show={show} onHide={handleClose}>
-                        <Modal.Header closeButton>
-                          <Modal.Title>Delete Confirmation</Modal.Title>
-                        </Modal.Header>
-                        <Modal.Body>Are you sure you want to delete the user? </Modal.Body>
-                        <Modal.Footer>
-                          <Button variant="secondary" onClick={handleClose}>Cancel Delete</Button>
-                          <Button variant="danger" onClick={() => handleDelete(user.id)}>Delete</Button>
-                        </Modal.Footer>
-                      </Modal>
-                    </>
-                  )}
-                </td>
-              </tr>
+                        <Modal show={show} onHide={handleClose}>
+                          <Modal.Header closeButton>
+                            <Modal.Title>Delete Confirmation</Modal.Title>
+                          </Modal.Header>
+                          <Modal.Body>Are you sure you want to delete the user? </Modal.Body>
+                          <Modal.Footer>
+                            <Button variant="secondary" onClick={handleClose}>Cancel Delete</Button>
+                            <Button variant="danger" onClick={() => handleDelete(user._id)}>Delete</Button>
+                          </Modal.Footer>
+                        </Modal>
+                      </>
+                    )}
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>

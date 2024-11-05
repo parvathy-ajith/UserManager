@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-//import axios from 'axios';
+import axios from 'axios';
 import { AuthContext } from '../auth/AuthContext';
 
 function Login() {
@@ -22,13 +22,13 @@ function Login() {
 
     const loginUser = async (data) => {
         try {
-            // const response = await axios.post(`${process.env.REACT_APP_API_BASEURL}/login`, {
-            //     email: data.email,
-            //     password: data.password
-            // });
+            const response = await axios.post(`${process.env.REACT_APP_API_BASEURL}/login`, {
+                email: data.email,
+                password: data.password
+            });
             //token, username, role set in AuthContext  
-            //login(response.data.token, response.data.username)
-            login('token','username','user');
+            login(response.data.token, response.data.username,response.data.role)
+
             if(role==='admin'){
                 navigate('/admin/dashboard');
             }
