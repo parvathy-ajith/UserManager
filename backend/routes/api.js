@@ -62,7 +62,7 @@ router.post('/login',loginLimiter, async function (req, res, next) {
             {
                 "UserInfo": {
                     "name": user.email,
-                    "roles": user.roles
+                    "roles": user.role
                 }
             },
             process.env.ACCESS_TOKEN_SECRET,
