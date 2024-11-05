@@ -6,7 +6,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const User = require('../models/user')
 const { sendMail } = require('../config/mail');
-const authenticateToken = require('../middleware/authenticateToken')
+const authenticateToken = require('../middleware/authenticateToken');
+const loginLimiter = require('../middleware/loginLimiter')
 const { userValidationSchema, loginValidationSchema } = require('../util/joiValidation')
 
 /* POST Add Admin */
@@ -38,7 +39,7 @@ const { userValidationSchema, loginValidationSchema } = require('../util/joiVali
 /* POST login user. */
 //req.body: {email, password}
 //res: success=token
-router.post('/login', async function (req, res, next) {
+router.post('/login',loginLimiter, async function (req, res, next) {
     try {
        
         const { error } = loginValidationSchema.validate(req.body);
@@ -65,7 +66,7 @@ router.post('/login', async function (req, res, next) {
                 }
             },
             process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: '15m' }
+            { expiresIn: '10s' }
         )
         const refreshToken = jwt.sign(
             { "name": user.email },  
@@ -105,7 +106,7 @@ router.post('/logout', async function (req, res, next) {
 
 /* POST Add new User */
 //req.body:{ name, email, phone, location }
-router.post('/user/add', async function (req, res, next) {
+router.post('/user/add',authenticateToken, async function (req, res, next) {
     try {
 
         const { error } = userValidationSchema.validate(req.body);
@@ -145,7 +146,7 @@ router.post('/user/add', async function (req, res, next) {
 /* PATCH edit User. */
 //token and userId from header
 //res: success edited user
-router.patch('/user/edit', async function (req, res, next) {
+router.patch('/user/edit',authenticateToken, async function (req, res, next) {
     const { _id, name, email, phone, location } = req.body
 
     try {
@@ -173,7 +174,7 @@ router.patch('/user/edit', async function (req, res, next) {
 
 /* DELETE User by ID. */
 //params : id
-router.delete('/user/:id', async (req, res) => {
+router.delete('/user/:id',authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -195,7 +196,7 @@ router.delete('/user/:id', async (req, res) => {
 /* GET Users. */
 //req.header token
 //res:userList
-router.get('/users', (req, res, next) => {
+router.get('/users',authenticateToken, (req, res, next) => {
 
     User.find({ role: 'user' }).then((users) => {
         res.status(200).json({ users });
