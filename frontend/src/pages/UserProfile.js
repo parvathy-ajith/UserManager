@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../auth/AuthContext';
-//import axios from 'axios';
+import axios from 'axios';
 
 
 function UserProfile() {
@@ -9,19 +9,14 @@ function UserProfile() {
 
   const userDetails = async () => {
     try {
-      // const response = await axios.get(`${process.env.REACT_APP_API_BASEURL}/users`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'application/json',
-      //   }
-      // });
-      // console.log(response.data);
-      // setUsers(response.data.users);
-
-      setUser(
-        { id: 1, name: "Rahul", email: "rahul@gmail.com", phone: "9495949422", location: "Trivandrum" }
-      );
-      console.log(user);
+      const response = await axios.get(`${process.env.REACT_APP_API_BASEURL}/user`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log(response.data);
+      setUser(response.data.user); 
 
     } catch (err) {
       console.log(err);

@@ -5,7 +5,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const User = require('../models/user')
-const { sendMail } = require('../config/mail')
+const { sendMail } = require('../config/mail');
+const authenticateToken = require('../middleware/authenticateToken')
 const { userValidationSchema, loginValidationSchema } = require('../util/joiValidation')
 
 /* POST Add Admin */
@@ -131,8 +132,10 @@ router.post('/user/add', async function (req, res, next) {
         const hashedPassword = await bcrypt.hash(password, 5);
 
         await new User({ name, email, phone, location, password: hashedPassword }).save();
-        await sendMail(email, "Password", `Hi ${name}, Your password to view your profile is : ${password}`);
+       
         res.status(201).json({ message: "User created successfully! Password sent over email." });
+        
+        await sendMail(email, "Password", `Hi ${name}, Your password to view your profile is : ${password}`);
     }
     catch (error) {
         res.status(500).json({ message: "Internal Server Error" });
@@ -196,6 +199,24 @@ router.get('/users', (req, res, next) => {
 
     User.find({ role: 'user' }).then((users) => {
         res.status(200).json({ users });
+    }).
+        catch(errors => {
+            console.log(errors)
+            res.status(500).json({ message: "Internal Server Error" })
+        });
+});
+
+/* GET User. */
+//req.header token
+//res:single user object
+router.get('/user',authenticateToken, (req, res, next) => {
+    const email = req.email;
+    User.findOne({ email }).then((user) => {
+        if (user.length === 0) {
+            return res.status(404).json({ message: "No user found with this email." });
+        }
+
+        res.status(200).json({ user });
     }).
         catch(errors => {
             console.log(errors)
