@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import { AuthContext } from '../auth/AuthContext';
@@ -13,7 +14,8 @@ function AdminDashboard() {
   const [editingItem, setEditingItem] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [show, setShow] = useState(false);
-  const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const { token, logout } = useContext(AuthContext);
 
   const addUserSchema = yup.object().shape({
     name: yup.string().required('Enter Name'),
@@ -37,8 +39,16 @@ function AdminDashboard() {
       });
       setUsers(response.data.users);
 
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.log(error);
+
+      if (error.response && error.response.status === 401) {
+        // Allow time for the user to see the error message before navigating
+        
+        setTimeout(() => {
+          logout();
+        }, 2000); // Adjusted to 5 seconds (5000 ms) for better visibility
+      }
     }
   };
 
@@ -77,6 +87,14 @@ function AdminDashboard() {
       console.log(error);
       if (error.response)
         setErrorMessage(error.response.data.message)
+
+      if (error.response && error.response.status === 401) {
+        // Allow time for the user to see the error message before navigating
+        
+        setTimeout(() => {
+          logout();
+        }, 2000); // Adjusted to 5 seconds (5000 ms) for better visibility
+      }
     }
 
   };
@@ -111,6 +129,13 @@ function AdminDashboard() {
       } else {
         setErrorMessage("An error occurred while deleting the user.");
       }
+      if (error.response && error.response.status === 401) {
+        // Allow time for the user to see the error message before navigating
+        handleClose();
+        setTimeout(() => {
+          logout();
+        }, 2000); // Adjusted to 5 seconds (5000 ms) for better visibility
+      }
     }
   };
 
@@ -136,8 +161,18 @@ function AdminDashboard() {
     }
     catch (error) {
       console.log(error);
-      if (error.response)
-        setErrorMessage(error.response.data.message)
+
+      if (error.response) {
+        setErrorMessage(error.response.data.message);
+      }
+
+      if (error.response && error.response.status === 401) {
+        // Allow time for the user to see the error message before navigating
+        
+        setTimeout(() => {
+          logout();
+        }, 2000); // Adjusted to 5 seconds (5000 ms) for better visibility
+      }
     }
   }
 
